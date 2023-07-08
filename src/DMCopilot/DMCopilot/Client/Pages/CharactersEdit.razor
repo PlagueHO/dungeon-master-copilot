@@ -1,0 +1,57 @@
+@page "/characters/{CharacterId?}"
+
+@using DMCopilot.Shared.Services
+@using DMCopilot.Shared.Data
+@using DMCopilot.Shared.Models
+
+@inject ISemanticKernelService semanticKernelService
+@inject ICharacterRepository characterRepository
+
+<h4>Character</h4>
+
+@if (CharacterId != null && _character == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="form-group d-flex">
+        <label for="_characterDetails">Character Details</label>
+        <input type="text" @bind="@_characterDetails" @oninput="@((e) => { _characterDetails=(string)e.Value;})" class="form-control" id="_characterDetails" placeholder="A hill dwarf merchant who runs a general store in Baldurs Gate.">
+        <Button Color="Color.Primary">Create</Button>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public Account? Account { get; set; }
+
+    [CascadingParameter]
+    public Tenant? Tenant { get; set; }
+
+    [Parameter]
+    public Guid? CharacterId { get; set; }
+
+    private Character _character;
+    private string _characterDetails { get; set; } = "A hill dwarf merchant who runs a general store in Baldurs Gate.";
+
+    protected override async void OnParametersSet()
+    {
+        if (Tenant != null)
+        {
+            if (CharacterId == null)
+                _character = new Character(Guid.NewGuid());
+            else
+                _character = await characterRepository.GetCharacterAsync((Guid) CharacterId);
+        }
+    }
+
+    private async Task CreateCharacter()
+    {
+        // Call the semanticKernelService with the character details
+        var result = await semanticKernelService.InvokeFunctionAsync("Character", "CreateCharacter", _characterDetails);
+
+        // Use the result in some way
+        Console.WriteLine(result);
+    }
+}

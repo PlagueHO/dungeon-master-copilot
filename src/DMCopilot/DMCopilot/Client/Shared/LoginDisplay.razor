@@ -1,0 +1,49 @@
+﻿@using Blazorise
+
+@using DMCopilot.Shared.Models
+@using DMCopilot.Shared.Services
+
+<AuthorizeView>
+    <Authorized>
+        <Bar Breakpoint="Breakpoint.Desktop"
+             Background="Background.Light"
+             ThemeContrast="ThemeContrast.Light">
+            <BarEnd>
+                <BarDropdown>
+                    @if (Account != null && Tenant != null)
+                    {
+                        <BarDropdownToggle Color="Color.Primary">
+                            @Tenant.Name (@Tenant.Type)
+                        </BarDropdownToggle>
+                        <BarDropdownMenu>
+                            @foreach (var tenantRole in Account.TenantRoles)
+                            {
+                                <BarDropdownItem Active=@(Tenant.Id == tenantRole.TenantId)>@tenantRole.Name (@tenantRole.Type)</BarDropdownItem>
+                            }
+                        </BarDropdownMenu>
+                    }
+                </BarDropdown>
+                <BarItem>
+                    <Button Link="MicrosoftIdentity/Account/SignOut" Color="Color.Secondary">Log out</Button>
+                </BarItem>
+            </BarEnd>
+        </Bar>
+    </Authorized>
+    <NotAuthorized>
+        <Bar Breakpoint="Breakpoint.Desktop"
+             Background="Background.Light"
+             ThemeContrast="ThemeContrast.Light">
+            <BarItem>
+                <Button Link="MicrosoftIdentity/Account/SignIn" Color="Color.Secondary">Log in</Button>
+            </BarItem>
+        </Bar>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    public Account? Account { get; set; }
+
+    [CascadingParameter]
+    public Tenant? Tenant { get; set; }
+}

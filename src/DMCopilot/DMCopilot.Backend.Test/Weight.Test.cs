@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using DMCopilot.Backend.Data;
+using DMCopilot.Shared.Data;
 
 namespace DMCopilot.Backend.Test.Data.Character
 {

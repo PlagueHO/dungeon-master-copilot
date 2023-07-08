@@ -24,17 +24,13 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="2.12.4" />
     <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="2.12.4" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="2.12.4" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="0.15.230531.5-preview" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="0.17.230704.3-preview" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Plugins\Character\CreateCharacter\skprompt.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Plugins\World\CreateWorld\skprompt.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\DMCopilot\Client\DMCopilot.Client.csproj" />
+    <ProjectReference Include="..\DMCopilot\Shared\DMCopilot.Shared.csproj" />
   </ItemGroup>
 
 </Project>

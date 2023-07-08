@@ -1,0 +1,59 @@
+@page "/characters"
+
+@using DMCopilot.Shared.Services
+@using DMCopilot.Shared.Data
+@using DMCopilot.Shared.Models
+
+@inject ICharacterRepository characterRepository
+
+<h4>Characters</h4>
+
+<Table FixedHeader FixedHeaderTableHeight="300px">
+    <TableHeader>
+        <TableRow>
+            <TableHeaderCell>Name</TableHeaderCell>
+            <TableHeaderCell>Age</TableHeaderCell>
+            <TableHeaderCell>Class</TableHeaderCell>
+            <TableHeaderCell>Race</TableHeaderCell>
+        </TableRow>
+    </TableHeader>
+    @if (IsLoaded)
+    {
+        <TableBody>
+            @foreach (var character in characters)
+            {
+                <TableRow @key="@character.Id">
+                    <TableRowHeader>@character.Name</TableRowHeader>
+                    <TableRowCell>@character.Age</TableRowCell>
+                    <TableRowCell>@character.Class</TableRowCell>
+                    <TableRowCell>@character.Race</TableRowCell>
+                </TableRow>
+            }
+        </TableBody>
+    }
+    else
+    {
+        <p><em>Loading...</em></p>
+    }
+</Table>
+
+@code {
+    private IEnumerable<Character> characters;
+    public Boolean IsLoaded => characters != null;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetCharacters();
+    }
+
+    private Boolean IsCharactersLoaded()
+    {
+        return characters != null;
+    }
+
+    private async Task GetCharacters()
+    {
+        // Get the characters from the CharacterRepository
+        this.characters = await characterRepository.GetCharactersAsync();
+    }
+}

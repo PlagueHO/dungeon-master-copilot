@@ -7,6 +7,7 @@ using DMCopilot.Shared.Data;
 using DMCopilot.Shared.Models.Configuration;
 using DMCopilot.Shared.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Identity.Web;
@@ -14,19 +15,15 @@ using Microsoft.Identity.Web.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var initialScopes = builder.Configuration["DownstreamApi:Scopes"]?.Split(' ') ?? builder.Configuration["MicrosoftGraph:Scopes"]?.Split(' ');
-
 // Add services to the container.
-builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
-        .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
-.AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))
+        .EnableTokenAcquisitionToCallDownstreamApi()
+            .AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
             .AddInMemoryTokenCaches();
-builder.Services.AddControllersWithViews()
-    .AddMicrosoftIdentityUI();
 
 // Add Application Insights services into service collection
-builder.Services.AddApplicationInsightsTelemetry();
+builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["ApplicationInsights:ConnectionString"]);
 
 // Add Logging services into service collection
 builder.Services.AddLogging(loggingBuilder =>
@@ -59,26 +56,25 @@ builder.Services.AddAuthorization(options =>
 // Get an Azure AD token for the application to use to authenticate to services in Azure
 var azureCredential = new DefaultAzureCredential();
 
+builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor()
-    .AddMicrosoftIdentityConsentHandler();
 
 // Add the Cosmos DB client as a singleton service
 var cosmosDbConfiguration = builder.Configuration.GetSection("CosmosDb").Get<CosmosDbConfiguration>() ?? throw new Exception("CosmosDb configuration is null");
 
 builder.Services.AddSingleton<CosmosClient>(service =>
+{
+    var cosmosDbConnectionString = builder.Configuration.GetConnectionString("CosmosDb");
+    if (string.IsNullOrEmpty(cosmosDbConnectionString))
     {
-        var cosmosDbConnectionString = builder.Configuration.GetConnectionString("CosmosDb");
-        if (string.IsNullOrEmpty(cosmosDbConnectionString))
-        {
-            var cosmosDbEndpoint = cosmosDbConfiguration.EndpointUri ?? throw new Exception("CosmosDb:EndpointUri is null");
-            return new CosmosClient(cosmosDbEndpoint.ToString(), azureCredential);
-        }
-        else
-        {
-            return new CosmosClient(cosmosDbConnectionString);
-        }
-    });
+        var cosmosDbEndpoint = cosmosDbConfiguration.EndpointUri ?? throw new Exception("CosmosDb:EndpointUri is null");
+        return new CosmosClient(cosmosDbEndpoint.ToString(), azureCredential);
+    }
+    else
+    {
+        return new CosmosClient(cosmosDbConnectionString);
+    }
+});
 
 // Define an array of repository configurations
 var repositories = new[] {
@@ -121,9 +117,9 @@ builder.Services.AddSingleton<ISemanticKernelService>((service) =>
 
 // Add Blazorize
 builder.Services.AddBlazorise(options =>
-    {
-        options.Immediate = true;
-    })
+{
+    options.Immediate = true;
+})
     .AddBootstrapProviders()
     .AddFontAwesomeIcons();
 
@@ -135,7 +131,11 @@ builder.Services.AddControllers()
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseWebAssemblyDebugging();
+}
+else
 {
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
@@ -144,15 +144,16 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthentication();
 app.UseAuthorization();
 
+
+app.MapRazorPages();
 app.MapControllers();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+app.MapFallbackToFile("index.html");
 
 app.Run();

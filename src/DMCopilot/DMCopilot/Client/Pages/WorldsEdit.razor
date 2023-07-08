@@ -1,0 +1,94 @@
+@page "/world/{WorldId?}"
+@page "/world/new"
+
+@using DMCopilot.Shared.Services
+@using DMCopilot.Shared.Data
+@using DMCopilot.Shared.Models
+
+@inject ISemanticKernelService semanticKernelService
+@inject IWorldRepository worldRepository
+@inject NavigationManager navigationManager
+
+<Card Background="Background.Info" WhiteText>
+    <CardBody>
+        <CardTitle Size="3">
+            Generate a World
+        </CardTitle>
+        <CardText>
+            Enter a few details about the world you would like to generate. You can be as specific as you like, or leave it to chance.
+        </CardText>
+        <Field>
+            <FieldBody>
+                <MemoEdit @bind-Text="@WorldDetails" AutoSize />
+            </FieldBody>
+        </Field>
+        <Button Color="Color.Primary" Margin="Margin.Is2.FromTop">
+            Generate <Icon Name="IconName.ArrowRight" />
+        </Button>
+    </CardBody>
+</Card>
+@if (World != null)
+{
+    <Card>
+        <CardBody>
+            <Field>
+                <FieldLabel>Name</FieldLabel>
+                <FieldBody>
+                    <TextEdit @bind-Text="@World.Name" />
+                </FieldBody>
+            </Field>
+            <Field>
+                <FieldLabel>Description</FieldLabel>
+                <FieldBody>
+                    <MemoEdit @bind-Text="@World.Description" AutoSize />
+                </FieldBody>
+            </Field>
+            <Field>
+                <FieldLabel>History</FieldLabel>
+                <FieldBody>
+                    <MemoEdit @bind-Text="@World.History" AutoSize />
+                </FieldBody>
+            </Field>
+            <Field>
+                <FieldLabel>Geography</FieldLabel>
+                <FieldBody>
+                    <MemoEdit @bind-Text="@World.Geography" AutoSize />
+                </FieldBody>
+            </Field>
+        </CardBody>
+    </Card>
+}
+
+@code {
+    [CascadingParameter]
+    public Account? Account { get; set; }
+
+    [CascadingParameter]
+    public Tenant? Tenant { get; set; }
+
+    [Parameter]
+    public Guid WorldId { get; set; }
+
+    public World? World;
+    public String WorldDetails { get; set; } = "A fantasy realm called on a world called Toril with a range of climates and environments with a long rich history.";
+    public Boolean IsNew => navigationManager.Uri.EndsWith("/world/new");
+    protected override async void OnParametersSet()
+    {
+        if (Tenant != null && Account != null)
+        {
+            if (IsNew)
+                World = new World(Guid.NewGuid(), Tenant.Id, "New World", "A new world!");
+            else
+                World = await worldRepository.GetWorldAsync(WorldId, Tenant.Id);            
+        }
+    }
+
+    private async Task CreateWorld()
+    {
+        // Call the semanticKernelService with the world details
+        var result = await semanticKernelService.InvokeFunctionAsync("World", "CreateWorld", WorldDetails);
+
+        // Use the result in some way
+        Console.WriteLine(result);
+    }
+}

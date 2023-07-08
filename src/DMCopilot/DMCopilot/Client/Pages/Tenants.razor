@@ -1,0 +1,63 @@
+@page "/tenants"
+
+@using DMCopilot.Shared.Services
+@using DMCopilot.Shared.Data
+@using DMCopilot.Shared.Models
+
+@inject ITenantRepository tenantRepository
+
+<h4>Tenants</h4>
+
+<Table FixedHeader FixedHeaderTableHeight="300px">
+    <TableHeader>
+        <TableRow>
+            <TableHeaderCell>Type</TableHeaderCell>
+            <TableHeaderCell>Name</TableHeaderCell>
+            <TableHeaderCell>Owner</TableHeaderCell>
+        </TableRow>
+    </TableHeader>
+    @if (IsLoaded)
+    {
+        <TableBody>
+            @foreach (var tenant in tenants)
+            {
+                <TableRow @key="@tenant.Id">
+                    <TableRowHeader>@tenant.Type</TableRowHeader>
+                    <TableRowCell>@tenant.Name</TableRowCell>
+                    <TableRowCell>@tenant.OwnerAccount</TableRowCell>
+                </TableRow>
+            }
+        </TableBody>
+    }
+    else
+    {
+        <p><em>Loading...</em></p>
+    }
+</Table>
+
+@code {
+    [CascadingParameter]
+    public Account? Account { get; set; }
+
+    [CascadingParameter]
+    public Tenant? Tenant { get; set; }
+
+    private IEnumerable<Tenant> tenants;
+    public Boolean IsLoaded => tenants != null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetTenants();
+    }
+
+    private Boolean IsCharactersLoaded()
+    {
+        return tenants != null;
+    }
+
+    private async Task GetTenants()
+    {
+        // Get the tenant from the TenantRepository
+        this.tenants = await tenantRepository.GetTenantsAsync();
+    }
+}
